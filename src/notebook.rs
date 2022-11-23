@@ -1,12 +1,12 @@
-use std::cell::RefCell;
 use std::mem::align_of;
+use std::sync::RwLock;
 
 use crate::chapter::{Chapter, ChapterT};
 use crate::handle::Handle;
 use crate::page::{Config, Page};
 use crate::SizeStrategy;
 
-pub trait Notebook {
+pub trait Notebook: Send + Sync {
     fn alloc<T>(&self) -> Handle<T>;
 
     /// Zeroes all bytes allocated including padding.
@@ -32,7 +32,7 @@ pub trait Notebook {
     fn dealloc<T>(&self, t: &T) -> bool;
 }
 
-pub trait TypedNotebook<T> {
+pub trait TypedNotebook<T>: Send + Sync {
     fn alloc_typed(&self) -> Handle<T>;
 
     /// Zeroes all bytes allocated including padding.
@@ -85,22 +85,22 @@ impl<N: Notebook, T> TypedNotebook<T> for N {
 /// by minimizing the frequency of calling into the operating system for allocation.
 pub struct MultiNotebook<C> {
     strategy: SizeStrategy,
-    ch1: RefCell<Chapter<Page<u8, C>>>,
-    ch2: RefCell<Chapter<Page<u16, C>>>,
-    ch3: RefCell<Chapter<Page<u32, C>>>,
-    ch4: RefCell<Chapter<Page<u64, C>>>,
-    ch5: RefCell<Chapter<Page<u128, C>>>,
+    ch1: RwLock<Chapter<Page<u8, C>>>,
+    ch2: RwLock<Chapter<Page<u16, C>>>,
+    ch3: RwLock<Chapter<Page<u32, C>>>,
+    ch4: RwLock<Chapter<Page<u64, C>>>,
+    ch5: RwLock<Chapter<Page<u128, C>>>,
 }
 
 impl<C> MultiNotebook<C> {
     pub fn new(strategy: SizeStrategy) -> MultiNotebook<C> {
         MultiNotebook {
             strategy,
-            ch1: RefCell::new(Chapter::<Page<u8, C>>::new()),
-            ch2: RefCell::new(Chapter::<Page<u16, C>>::new()),
-            ch3: RefCell::new(Chapter::<Page<u32, C>>::new()),
-            ch4: RefCell::new(Chapter::<Page<u64, C>>::new()),
-            ch5: RefCell::new(Chapter::<Page<u128, C>>::new()),
+            ch1: RwLock::new(Chapter::<Page<u8, C>>::new()),
+            ch2: RwLock::new(Chapter::<Page<u16, C>>::new()),
+            ch3: RwLock::new(Chapter::<Page<u32, C>>::new()),
+            ch4: RwLock::new(Chapter::<Page<u64, C>>::new()),
+            ch5: RwLock::new(Chapter::<Page<u128, C>>::new()),
         }
     }
 }
@@ -113,11 +113,11 @@ ch2: {}
 ch3: {}
 ch4: {}
 ch5: {}",
-            self.ch1.borrow().to_string(),
-            self.ch2.borrow().to_string(),
-            self.ch3.borrow().to_string(),
-            self.ch4.borrow().to_string(),
-            self.ch5.borrow().to_string(),
+            self.ch1.read().unwrap().to_string(),
+            self.ch2.read().unwrap().to_string(),
+            self.ch3.read().unwrap().to_string(),
+            self.ch4.read().unwrap().to_string(),
+            self.ch5.read().unwrap().to_string(),
         )
     }
 }
@@ -125,13 +125,13 @@ ch5: {}",
 impl<C: Config> Notebook for MultiNotebook<C> {
     fn alloc<T>(&self) -> Handle<T> {
         let t = match align_of::<T>() {
-            1 => self.ch1.borrow_mut().alloc::<T>(self.strategy),
-            2 => self.ch2.borrow_mut().alloc::<T>(self.strategy),
-            4 => self.ch3.borrow_mut().alloc::<T>(self.strategy),
-            8 => self.ch4.borrow_mut().alloc::<T>(self.strategy),
-            16 => self.ch5.borrow_mut().alloc::<T>(self.strategy),
+            1 => self.ch1.write().unwrap().alloc::<T>(self.strategy),
+            2 => self.ch2.write().unwrap().alloc::<T>(self.strategy),
+            4 => self.ch3.write().unwrap().alloc::<T>(self.strategy),
+            8 => self.ch4.write().unwrap().alloc::<T>(self.strategy),
+            16 => self.ch5.write().unwrap().alloc::<T>(self.strategy),
             // should be an invariant
-            _ => self.ch1.borrow_mut().alloc::<T>(self.strategy),
+            _ => self.ch1.write().unwrap().alloc::<T>(self.strategy),
         }.cast();
 
         unsafe {
@@ -143,13 +143,13 @@ impl<C: Config> Notebook for MultiNotebook<C> {
         let ptr = (t as *const T).cast();
 
         match align_of::<T>() {
-            1 => self.ch1.borrow_mut().dealloc(ptr),
-            2 => self.ch2.borrow_mut().dealloc(ptr),
-            4 => self.ch3.borrow_mut().dealloc(ptr),
-            8 => self.ch4.borrow_mut().dealloc(ptr),
-            16 => self.ch5.borrow_mut().dealloc(ptr),
+            1 => self.ch1.write().unwrap().dealloc(ptr),
+            2 => self.ch2.write().unwrap().dealloc(ptr),
+            4 => self.ch3.write().unwrap().dealloc(ptr),
+            8 => self.ch4.write().unwrap().dealloc(ptr),
+            16 => self.ch5.write().unwrap().dealloc(ptr),
             // should be an invariant
-            _ => self.ch1.borrow_mut().dealloc(ptr),
+            _ => self.ch1.write().unwrap().dealloc(ptr),
         }
     }
 }
@@ -158,27 +158,27 @@ impl<C: Config> Notebook for MultiNotebook<C> {
 /// into a cache line to increase cache hits during iteration.
 pub struct MonoNotebook<T, C> {
     size_strategy: SizeStrategy,
-    chapter: RefCell<Chapter<Page<T, C>>>,
+    chapter: RwLock<Chapter<Page<T, C>>>,
 }
 
 impl<T, C> MonoNotebook<T, C> {
     pub fn new(size_strategy: SizeStrategy) -> MonoNotebook<T, C> {
         MonoNotebook {
             size_strategy,
-            chapter: RefCell::new(Chapter::<Page<T, C>>::new()),
+            chapter: RwLock::new(Chapter::<Page<T, C>>::new()),
         }
     }
 }
 
 impl<T: ToString, C> ToString for MonoNotebook<T, C> {
     fn to_string(&self) -> String {
-        self.chapter.borrow().to_string()
+        self.chapter.read().unwrap().to_string()
     }
 }
 
-impl<T, C: Config> TypedNotebook<T> for MonoNotebook<T, C> {
+impl<T: Send + Sync, C: Config> TypedNotebook<T> for MonoNotebook<T, C> {
     fn alloc_typed(&self) -> Handle<T> {
-        let t = self.chapter.borrow_mut().alloc::<T>(self.size_strategy).cast();
+        let t = self.chapter.write().unwrap().alloc::<T>(self.size_strategy).cast();
 
         unsafe {
             Handle::new(self, &mut *t)
@@ -186,6 +186,6 @@ impl<T, C: Config> TypedNotebook<T> for MonoNotebook<T, C> {
     }
 
     fn dealloc_typed(&self, t: &T) -> bool {
-        self.chapter.borrow_mut().dealloc((t as *const T).cast())
+        self.chapter.write().unwrap().dealloc((t as *const T).cast())
     }
 }

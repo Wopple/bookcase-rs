@@ -20,7 +20,7 @@ struct S1 {
 }
 
 fn main() {
-    let mut notebook = MultiNotebook::<BumpConfig>::new(SizeStrategy::WordsPerPage(4));
+    let notebook = MultiNotebook::<BumpConfig>::new(SizeStrategy::WordsPerPage(4));
 
     notebook.alloc_init(1u8);
     let v1 = notebook.alloc_init(String::from("1u8"));

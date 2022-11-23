@@ -60,7 +60,7 @@ impl<T: ToString, C> ToString for Page<T, C> {
     }
 }
 
-pub(crate) trait Config {
+pub(crate) trait Config: Send + Sync {
     fn new<T>(ptr: usize, capacity: usize) -> Self;
     fn can_alloc(&self, num: usize) -> bool;
     fn alloc(&mut self, num: usize) -> *mut u8;
