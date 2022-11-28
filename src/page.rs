@@ -1,52 +1,59 @@
-use std::mem::{align_of, size_of};
+use std::alloc::{Allocator, Layout};
 
-use crate::rust_internals::raw_vec::RawVec;
+use crate::rust_internals::raw_buffer::RawBuffer;
 
-pub(crate) trait PageT {
-    fn new(capacity: usize) -> Self;
-    fn can_alloc(&self, num: usize) -> bool;
-    fn alloc(&mut self, num: usize) -> *mut u8;
+pub(crate) trait PageT: Sized {
+    fn create(layout: Layout, alloc: &dyn Allocator) -> Option<Self>;
+    fn can_alloc(&self, bytes: usize) -> bool;
+    fn alloc(&mut self, bytes: usize) -> *mut u8;
     fn can_dealloc(&self, ptr: *const u8) -> bool;
     fn dealloc(&mut self, ptr: *const u8);
+    fn destroy(&mut self, allocator: impl Allocator);
 }
 
-pub(crate) struct Page<T, C> {
-    buffer: RawVec<T>,
+pub(crate) struct Page<C> {
+    buffer: RawBuffer,
     config: C,
 }
 
-impl<T, C: Config> PageT for Page<T, C> {
-    fn new(capacity: usize) -> Page<T, C> {
-        let buffer = RawVec::with_capacity(capacity);
-        let config = C::new::<T>(buffer.ptr() as usize, buffer.capacity());
+impl<C: Config> PageT for Page<C> {
+    fn create(layout: Layout, allocator: &dyn Allocator) -> Option<Page<C>> {
+        let buffer = RawBuffer::create(layout, allocator)?;
+        let config = C::new(buffer.ptr() as usize, layout);
 
-        Page { buffer, config }
+        Some(Page { buffer, config })
     }
 
-    #[inline]
-    fn can_alloc(&self, num: usize) -> bool {
-        self.config.can_alloc(num)
+    #[inline(always)]
+    fn can_alloc(&self, bytes: usize) -> bool {
+        self.config.can_alloc(bytes)
     }
 
-    #[inline]
-    fn alloc(&mut self, num: usize) -> *mut u8 {
-        self.config.alloc(num)
+    #[inline(always)]
+    fn alloc(&mut self, bytes: usize) -> *mut u8 {
+        self.config.alloc(bytes)
     }
 
+    #[inline(always)]
     fn can_dealloc(&self, ptr: *const u8) -> bool {
         self.config.can_dealloc(ptr)
     }
 
+    #[inline(always)]
     fn dealloc(&mut self, ptr: *const u8) {
         self.config.dealloc(ptr);
     }
+
+    fn destroy(&mut self, allocator: impl Allocator) {
+        self.buffer.destroy(allocator);
+    }
 }
 
-impl<T: ToString, C> ToString for Page<T, C> {
+impl<C> ToString for Page<C> {
     fn to_string(&self) -> String {
         let mut s = String::from("\n  buffer:");
 
-        for idx in 0..self.buffer.capacity() * size_of::<T>() {
+        for idx in 0..self.buffer.size() {
             let b;
 
             unsafe {
@@ -60,10 +67,10 @@ impl<T: ToString, C> ToString for Page<T, C> {
     }
 }
 
-pub(crate) trait Config: Send + Sync {
-    fn new<T>(ptr: usize, capacity: usize) -> Self;
-    fn can_alloc(&self, num: usize) -> bool;
-    fn alloc(&mut self, num: usize) -> *mut u8;
+pub trait Config: Send + Sync {
+    fn new(ptr: usize, layout: Layout) -> Self;
+    fn can_alloc(&self, bytes: usize) -> bool;
+    fn alloc(&mut self, bytes: usize) -> *mut u8;
     fn can_dealloc(&self, ptr: *const u8) -> bool;
     fn dealloc(&mut self, ptr: *const u8);
 }
@@ -74,48 +81,46 @@ pub(crate) trait Config: Send + Sync {
 /// memory until the whole notebook is dropped.
 pub struct BumpConfig {
     ptr: usize,
-    capacity: usize,
-    align: usize,
+    layout: Layout,
     pub(crate) offset: usize,
 }
 
 impl BumpConfig {
-    #[inline]
+    #[inline(always)]
     fn remaining(&self) -> usize {
-        self.capacity - self.offset
+        self.layout.size() - self.offset
     }
 }
 
 impl Config for BumpConfig {
-    fn new<T>(ptr: usize, capacity: usize) -> Self {
+    fn new(ptr: usize, layout: Layout) -> Self {
         BumpConfig {
             ptr,
-            capacity,
-            align: align_of::<T>(),
+            layout,
             offset: 0,
         }
     }
 
-    #[inline]
-    fn can_alloc(&self, num: usize) -> bool {
-        self.remaining() >= num
+    #[inline(always)]
+    fn can_alloc(&self, bytes: usize) -> bool {
+        self.remaining() >= bytes
     }
 
-    #[inline]
-    fn alloc(&mut self, num: usize) -> *mut u8 {
-        let t = self.ptr as usize + (self.offset * self.align);
+    #[inline(always)]
+    fn alloc(&mut self, bytes: usize) -> *mut u8 {
+        let t = self.ptr as usize + self.offset;
 
-        self.offset += num;
+        self.offset += bytes;
         t as *mut u8
     }
 
-    #[inline]
+    #[inline(always)]
     fn can_dealloc(&self, _: *const u8) -> bool {
         // do not want to indicate failure even though deallocation is a no-op
         true
     }
 
-    #[inline]
+    #[inline(always)]
     fn dealloc(&mut self, _: *const u8) {
         // deallocation is a no-op for bump allocation
     }

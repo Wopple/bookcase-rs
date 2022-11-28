@@ -2,6 +2,7 @@
 #![feature(dropck_eyepatch)]
 #![feature(ptr_internals)]
 
+use std::alloc;
 use crate::notebook::*;
 use crate::page::BumpConfig;
 use crate::strategy::*;
@@ -20,7 +21,11 @@ struct S1 {
 }
 
 fn main() {
-    let notebook = MultiNotebook::<BumpConfig>::new(SizeStrategy::WordsPerPage(4));
+    let notebook = MultiNotebook::<alloc::Global, BumpConfig>::new(
+        alloc::Global,
+        SizeStrategy::WordsPerPage(4),
+        GrowthStrategy::Constant,
+    );
 
     notebook.alloc_init(1u8);
     let v1 = notebook.alloc_init(String::from("1u8"));
@@ -35,9 +40,9 @@ fn main() {
     }
 
     let typed: &dyn TypedNotebook<usize> = &notebook;
-    typed.alloc_init_typed(7usize);
-    typed.alloc_init_typed(7usize);
-    typed.alloc_init_typed(7usize);
+    typed.alloc_init_t(7usize);
+    typed.alloc_init_t(7usize);
+    typed.alloc_init_t(7usize);
 
     println!("{:?}", v1);
     println!("{:?}", v2);

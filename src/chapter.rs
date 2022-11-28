@@ -1,21 +1,51 @@
-use std::mem::{align_of, size_of};
+use std::alloc::{Allocator, Layout};
 
-use crate::page::{PageT};
-use crate::SizeStrategy;
-
-pub(crate) trait ChapterT {
-    fn alloc<T>(&mut self, strategy: SizeStrategy) -> *mut u8;
-    fn dealloc(&mut self, ptr: *const u8) -> bool;
-}
+use crate::page::PageT;
 
 pub(crate) struct Chapter<P> {
     pages: Vec<P>,
 }
 
-impl<P> Chapter<P> {
+impl<P: PageT> Chapter<P> {
     pub(crate) fn new() -> Chapter<P> {
-        Chapter {
-            pages: vec![],
+        Chapter { pages: vec![] }
+    }
+
+    pub(crate) fn pages(&self) -> &[P] {
+        &self.pages
+    }
+
+    pub(crate) fn alloc(
+        &mut self,
+        allocator: &dyn Allocator,
+        t_size: usize,
+        t_align: usize,
+        page_bytes: usize,
+    ) -> Option<*mut u8> {
+        if let Some(page) = self.pages.iter_mut().rev().find(|p| p.can_alloc(t_size)) {
+            Some(page.alloc(t_size))
+        } else {
+            let layout = Layout::from_size_align(page_bytes, t_align).ok()?;
+            let mut page = P::create(layout, allocator)?;
+            let ptr = page.alloc(t_size);
+
+            self.pages.push(page);
+            Some(ptr)
+        }
+    }
+
+    pub(crate) fn dealloc(&mut self, ptr: *const u8) -> bool {
+        if let Some(page) = self.pages.iter_mut().find(|p| p.can_dealloc(ptr)) {
+            page.dealloc(ptr);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn destroy(&mut self, allocator: &dyn Allocator) {
+        for page in self.pages.iter_mut() {
+            page.destroy(allocator)
         }
     }
 }
@@ -27,30 +57,5 @@ impl<P: ToString> ToString for Chapter<P> {
             .map(ToString::to_string)
             .collect::<Vec<String>>()
             .join("")
-    }
-}
-
-impl<P: PageT> ChapterT for Chapter<P> {
-    fn alloc<T>(&mut self, strategy: SizeStrategy) -> *mut u8 {
-        let alignments = size_of::<T>() / align_of::<T>();
-
-        if let Some(page) = self.pages.iter_mut().rev().find(|p| p.can_alloc(alignments)) {
-            page.alloc(alignments)
-        } else {
-            let mut page = P::new(strategy.alignments::<T>());
-            let ptr = page.alloc(alignments);
-
-            self.pages.push(page);
-            ptr
-        }
-    }
-
-    fn dealloc(&mut self, ptr: *const u8) -> bool {
-        if let Some(page) = self.pages.iter_mut().find(|p| p.can_dealloc(ptr)) {
-            page.dealloc(ptr);
-            true
-        } else {
-            false
-        }
     }
 }

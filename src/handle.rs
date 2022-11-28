@@ -46,6 +46,6 @@ impl<'book, T> Drop for Handle<'book, T> {
             (self.t as *mut T).drop_in_place();
         }
 
-        self.notebook.dealloc_typed(self.t);
+        self.notebook.dealloc_t(self.t);
     }
 }
