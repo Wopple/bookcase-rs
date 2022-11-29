@@ -1,0 +1,16 @@
+[package]
+name = "bookcase"
+authors = ["Daniel Tashjian <thewopple@gmail.com>"]
+version = "0.0.1"
+edition = "2021"
+
+[features]
+default = ["stable"]
+
+# Exactly 1 of these release channels must be enabled.
+stable = []
+beta = []
+experimental = []
+
+[dependencies]
+bookcase_macros = { path = "../bookcase_macros" }

@@ -5,10 +5,3 @@ version = 3
 [[package]]
 name = "bookcase"
 version = "0.0.1"
-dependencies = [
- "bookcase_macros",
-]
-
-[[package]]
-name = "bookcase_macros"
-version = "1.0.0"

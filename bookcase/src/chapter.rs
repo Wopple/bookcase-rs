@@ -1,17 +1,17 @@
 use std::alloc::{Allocator, Layout};
 
-use crate::page::PageT;
+use crate::page::{PageConfig, Page};
 
-pub(crate) struct Chapter<P> {
-    pages: Vec<P>,
+pub(crate) struct Chapter<C> {
+    pages: Vec<Page<C>>,
 }
 
-impl<P: PageT> Chapter<P> {
-    pub(crate) fn new() -> Chapter<P> {
+impl<C: PageConfig> Chapter<C> {
+    pub(crate) fn new() -> Chapter<C> {
         Chapter { pages: vec![] }
     }
 
-    pub(crate) fn pages(&self) -> &[P] {
+    pub(crate) fn pages(&self) -> &[Page<C>] {
         &self.pages
     }
 
@@ -26,7 +26,7 @@ impl<P: PageT> Chapter<P> {
             Some(page.alloc(t_size))
         } else {
             let layout = Layout::from_size_align(page_bytes, t_align).ok()?;
-            let mut page = P::create(layout, allocator)?;
+            let mut page = Page::create(layout, allocator)?;
             let ptr = page.alloc(t_size);
 
             self.pages.push(page);
@@ -50,7 +50,7 @@ impl<P: PageT> Chapter<P> {
     }
 }
 
-impl<P: ToString> ToString for Chapter<P> {
+impl<C> ToString for Chapter<C> {
     fn to_string(&self) -> String {
         self.pages
             .iter()

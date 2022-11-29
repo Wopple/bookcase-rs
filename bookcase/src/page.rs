@@ -1,51 +1,63 @@
 use std::alloc::{Allocator, Layout};
-
-use crate::rust_internals::raw_buffer::RawBuffer;
-
-pub(crate) trait PageT: Sized {
-    fn create(layout: Layout, alloc: &dyn Allocator) -> Option<Self>;
-    fn can_alloc(&self, bytes: usize) -> bool;
-    fn alloc(&mut self, bytes: usize) -> *mut u8;
-    fn can_dealloc(&self, ptr: *const u8) -> bool;
-    fn dealloc(&mut self, ptr: *const u8);
-    fn destroy(&mut self, allocator: impl Allocator);
-}
+use std::ptr::Unique;
 
 pub(crate) struct Page<C> {
-    buffer: RawBuffer,
+    ptr: Unique<u8>,
+    layout: Layout,
     config: C,
 }
 
-impl<C: Config> PageT for Page<C> {
-    fn create(layout: Layout, allocator: &dyn Allocator) -> Option<Page<C>> {
-        let buffer = RawBuffer::create(layout, allocator)?;
-        let config = C::new(buffer.ptr() as usize, layout);
+impl<C: PageConfig> Page<C> {
+    pub(crate) fn create(layout: Layout, allocator: &dyn Allocator) -> Option<Page<C>> {
+        if usize::BITS < 64 && layout.size() > isize::MAX as usize {
+            return None;
+        }
 
-        Some(Page { buffer, config })
+        let ptr = allocator.allocate(layout).ok()?.cast().as_ptr();
+        let config = C::new(ptr as usize, layout);
+
+        Some(Page {
+            ptr: unsafe { Unique::new_unchecked(ptr) },
+            layout,
+            config,
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn clone_buffer(&self) -> Vec<u8> {
+        let mut v = Vec::new();
+
+        for idx in 0..self.layout.size() {
+            unsafe { v.push(*((self.ptr.as_ptr() as usize + idx) as *const u8)); }
+        }
+
+        v
     }
 
     #[inline(always)]
-    fn can_alloc(&self, bytes: usize) -> bool {
+    pub(crate) fn can_alloc(&self, bytes: usize) -> bool {
         self.config.can_alloc(bytes)
     }
 
     #[inline(always)]
-    fn alloc(&mut self, bytes: usize) -> *mut u8 {
+    pub(crate) fn alloc(&mut self, bytes: usize) -> *mut u8 {
         self.config.alloc(bytes)
     }
 
     #[inline(always)]
-    fn can_dealloc(&self, ptr: *const u8) -> bool {
+    pub(crate) fn can_dealloc(&self, ptr: *const u8) -> bool {
         self.config.can_dealloc(ptr)
     }
 
     #[inline(always)]
-    fn dealloc(&mut self, ptr: *const u8) {
+    pub(crate) fn dealloc(&mut self, ptr: *const u8) {
         self.config.dealloc(ptr);
     }
 
-    fn destroy(&mut self, allocator: impl Allocator) {
-        self.buffer.destroy(allocator);
+    pub(crate) fn destroy(&mut self, allocator: impl Allocator) {
+        unsafe {
+            allocator.deallocate(self.ptr.into(), self.layout);
+        }
     }
 }
 
@@ -53,22 +65,22 @@ impl<C> ToString for Page<C> {
     fn to_string(&self) -> String {
         let mut s = String::from("\n  buffer:");
 
-        for idx in 0..self.buffer.size() {
+        for idx in 0..self.layout.size() {
             let b;
 
             unsafe {
-                b = *((self.buffer.ptr() as usize + idx) as *const u8);
+                b = *((self.ptr.as_ptr() as usize + idx) as *const u8);
             }
 
-            s.push_str(&format!(" {:03}", b));
+            s.push_str(&format!(" {:02x}", b));
         }
 
         s
     }
 }
 
-pub trait Config: Send + Sync {
-    fn new(ptr: usize, layout: Layout) -> Self;
+pub trait PageConfig: Send + Sync {
+    fn new(addr: usize, layout: Layout) -> Self;
     fn can_alloc(&self, bytes: usize) -> bool;
     fn alloc(&mut self, bytes: usize) -> *mut u8;
     fn can_dealloc(&self, ptr: *const u8) -> bool;
@@ -80,7 +92,7 @@ pub trait Config: Send + Sync {
 /// types is a no-op. This yields very high performance at the cost of being unable to deallocate
 /// memory until the whole notebook is dropped.
 pub struct BumpConfig {
-    ptr: usize,
+    addr: usize,
     layout: Layout,
     pub(crate) offset: usize,
 }
@@ -92,10 +104,10 @@ impl BumpConfig {
     }
 }
 
-impl Config for BumpConfig {
-    fn new(ptr: usize, layout: Layout) -> Self {
+impl PageConfig for BumpConfig {
+    fn new(addr: usize, layout: Layout) -> Self {
         BumpConfig {
-            ptr,
+            addr,
             layout,
             offset: 0,
         }
@@ -108,7 +120,7 @@ impl Config for BumpConfig {
 
     #[inline(always)]
     fn alloc(&mut self, bytes: usize) -> *mut u8 {
-        let t = self.ptr as usize + self.offset;
+        let t = self.addr + self.offset;
 
         self.offset += bytes;
         t as *mut u8
