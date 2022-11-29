@@ -4,10 +4,10 @@ use std::ptr::Unique;
 pub(crate) struct Page<C> {
     ptr: Unique<u8>,
     layout: Layout,
-    config: C,
+    utensil: C,
 }
 
-impl<C: PageConfig> Page<C> {
+impl<C: Utensil> Page<C> {
     pub(crate) fn create(layout: Layout, allocator: &dyn Allocator) -> Option<Page<C>> {
         if usize::BITS < 64 && layout.size() > isize::MAX as usize {
             return None;
@@ -19,7 +19,7 @@ impl<C: PageConfig> Page<C> {
         Some(Page {
             ptr: unsafe { Unique::new_unchecked(ptr) },
             layout,
-            config,
+            utensil: config,
         })
     }
 
@@ -36,22 +36,22 @@ impl<C: PageConfig> Page<C> {
 
     #[inline(always)]
     pub(crate) fn can_alloc(&self, bytes: usize) -> bool {
-        self.config.can_alloc(bytes)
+        self.utensil.can_alloc(bytes)
     }
 
     #[inline(always)]
     pub(crate) fn alloc(&mut self, bytes: usize) -> *mut u8 {
-        self.config.alloc(bytes)
+        self.utensil.alloc(bytes)
     }
 
     #[inline(always)]
     pub(crate) fn can_dealloc(&self, ptr: *const u8) -> bool {
-        self.config.can_dealloc(ptr)
+        self.utensil.can_dealloc(ptr)
     }
 
     #[inline(always)]
     pub(crate) fn dealloc(&mut self, ptr: *const u8) {
-        self.config.dealloc(ptr);
+        self.utensil.dealloc(ptr);
     }
 
     pub(crate) fn destroy(&mut self, allocator: impl Allocator) {
@@ -79,7 +79,7 @@ impl<C> ToString for Page<C> {
     }
 }
 
-pub trait PageConfig: Send + Sync {
+pub trait Utensil: Send + Sync {
     fn new(addr: usize, layout: Layout) -> Self;
     fn can_alloc(&self, bytes: usize) -> bool;
     fn alloc(&mut self, bytes: usize) -> *mut u8;
@@ -87,26 +87,27 @@ pub trait PageConfig: Send + Sync {
     fn dealloc(&mut self, ptr: *const u8);
 }
 
+/// You cannot erase ink.
 /// This causes the notebook to use bump allocation. This means an allocation merely increases an
-/// offset as its only write operation to reserve the memory. It also means deallocating the
-/// types is a no-op. This yields very high performance at the cost of being unable to deallocate
-/// memory until the whole notebook is dropped.
-pub struct BumpConfig {
+/// offset as its only write operation to reserve the memory. It also means deallocating is a no-op.
+/// This yields very high performance at the cost of being unable to deallocate memory until the
+/// whole notebook is dropped.
+pub struct Pen {
     addr: usize,
     layout: Layout,
     pub(crate) offset: usize,
 }
 
-impl BumpConfig {
+impl Pen {
     #[inline(always)]
     fn remaining(&self) -> usize {
         self.layout.size() - self.offset
     }
 }
 
-impl PageConfig for BumpConfig {
+impl Utensil for Pen {
     fn new(addr: usize, layout: Layout) -> Self {
-        BumpConfig {
+        Pen {
             addr,
             layout,
             offset: 0,
@@ -128,12 +129,10 @@ impl PageConfig for BumpConfig {
 
     #[inline(always)]
     fn can_dealloc(&self, _: *const u8) -> bool {
-        // do not want to indicate failure even though deallocation is a no-op
         true
     }
 
     #[inline(always)]
     fn dealloc(&mut self, _: *const u8) {
-        // deallocation is a no-op for bump allocation
     }
 }

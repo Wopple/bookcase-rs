@@ -17,7 +17,7 @@ pub(crate) mod strategy;
 mod tests {
     use std::alloc;
     use crate::{GrowthStrategy, MonoNotebook, MultiNotebook, Notebook, SizeStrategy, TypedNotebook};
-    use crate::page::BumpConfig;
+    use crate::page::Pen;
 
     #[derive(Debug, Eq, PartialEq)]
     struct S1 {
@@ -28,7 +28,7 @@ mod tests {
     #[test]
     fn test() {
         {
-            let notebook = MultiNotebook::<_, BumpConfig>::new(
+            let notebook = MultiNotebook::<_, Pen>::new(
                 alloc::Global,
                 SizeStrategy::WordsPerPage(4),
                 GrowthStrategy::Constant,
@@ -73,7 +73,7 @@ mod tests {
         }
 
         {
-            let typed_notebook = MonoNotebook::<_, BumpConfig, S1>::new(
+            let typed_notebook = MonoNotebook::<_, Pen, S1>::new(
                 alloc::Global,
                 SizeStrategy::ItemsPerPage(4),
                 GrowthStrategy::Constant,

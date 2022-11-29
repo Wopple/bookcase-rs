@@ -1,12 +1,12 @@
 use std::alloc::{Allocator, Layout};
 
-use crate::page::{PageConfig, Page};
+use crate::page::{Page, Utensil};
 
 pub(crate) struct Chapter<C> {
     pages: Vec<Page<C>>,
 }
 
-impl<C: PageConfig> Chapter<C> {
+impl<C: Utensil> Chapter<C> {
     pub(crate) fn new() -> Chapter<C> {
         Chapter { pages: vec![] }
     }
