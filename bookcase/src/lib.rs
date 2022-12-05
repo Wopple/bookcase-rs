@@ -1,13 +1,14 @@
-#![feature(allocator_api)]
-#![feature(ptr_internals)]
-
-#[cfg(not(test))]
-::bookcase_macros::assert_release_channel!();
+#![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
 pub use notebook::*;
 pub use strategy::*;
 
+#[cfg(not(test))]
+::bookcase_macros::assert_release_channel!();
+
+pub(crate) mod allocator;
 pub(crate) mod chapter;
+pub(crate) mod error;
 pub(crate) mod handle;
 pub(crate) mod notebook;
 pub(crate) mod page;
@@ -15,8 +16,14 @@ pub(crate) mod strategy;
 
 #[cfg(test)]
 mod tests {
-    use std::alloc;
     use crate::{GrowthStrategy, MonoNotebook, MultiNotebook, Notebook, SizeStrategy, TypedNotebook};
+
+    #[cfg(not(feature = "allocator_api"))]
+    use crate::allocator::stable_allocator::StdAllocator as Allocator;
+
+    #[cfg(feature = "allocator_api")]
+    use std::alloc::Global as Allocator;
+
     use crate::page::Pen;
 
     #[derive(Debug, Eq, PartialEq)]
@@ -29,7 +36,7 @@ mod tests {
     fn test() {
         {
             let notebook = MultiNotebook::<_, Pen>::new(
-                alloc::Global,
+                Allocator,
                 SizeStrategy::WordsPerPage(4),
                 GrowthStrategy::Constant,
             );
@@ -74,7 +81,7 @@ mod tests {
 
         {
             let typed_notebook = MonoNotebook::<_, Pen, S1>::new(
-                alloc::Global,
+                Allocator,
                 SizeStrategy::ItemsPerPage(4),
                 GrowthStrategy::Constant,
             );

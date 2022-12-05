@@ -1,4 +1,4 @@
-use std::mem::size_of;
+use core::mem::size_of;
 
 /// This controls the base size of memory allocated for each page.
 #[derive(Clone, Copy, Debug)]

@@ -1,14 +1,18 @@
-use std::alloc::{Allocator, Layout};
-use std::ptr::Unique;
+use core::alloc::Layout;
+use core::marker::PhantomData;
+use core::ptr::NonNull;
 
-pub(crate) struct Page<C> {
-    ptr: Unique<u8>,
+use crate::allocator::BookcaseAllocator;
+
+pub(crate) struct Page<C, T=u8> {
+    ptr: NonNull<T>,
     layout: Layout,
     utensil: C,
+    _owns_ptr: PhantomData<T>,
 }
 
 impl<C: Utensil> Page<C> {
-    pub(crate) fn create(layout: Layout, allocator: &dyn Allocator) -> Option<Page<C>> {
+    pub(crate) fn create(layout: Layout, allocator: &dyn BookcaseAllocator) -> Option<Page<C>> {
         if usize::BITS < 64 && layout.size() > isize::MAX as usize {
             return None;
         }
@@ -17,9 +21,10 @@ impl<C: Utensil> Page<C> {
         let config = C::new(ptr as usize, layout);
 
         Some(Page {
-            ptr: unsafe { Unique::new_unchecked(ptr) },
+            ptr: unsafe { NonNull::new_unchecked(ptr) },
             layout,
             utensil: config,
+            _owns_ptr: PhantomData,
         })
     }
 
@@ -54,7 +59,7 @@ impl<C: Utensil> Page<C> {
         self.utensil.dealloc(ptr);
     }
 
-    pub(crate) fn destroy(&mut self, allocator: impl Allocator) {
+    pub(crate) fn destroy(&mut self, allocator: &dyn BookcaseAllocator) {
         unsafe {
             allocator.deallocate(self.ptr.into(), self.layout);
         }

@@ -3,9 +3,13 @@ name = "bookcase"
 authors = ["Daniel Tashjian <thewopple@gmail.com>"]
 version = "0.0.1"
 edition = "2021"
+rust-version = "1.56.0"
 
 [features]
 default = ["stable"]
+
+# Use this feature to allow
+allocator_api = []
 
 # Exactly 1 of these release channels must be enabled.
 stable = []
@@ -14,3 +18,4 @@ experimental = []
 
 [dependencies]
 bookcase_macros = { path = "../bookcase_macros" }
+thiserror = "=1.0.37"

@@ -1,5 +1,6 @@
-use std::alloc::{Allocator, Layout};
+use core::alloc::Layout;
 
+use crate::allocator::BookcaseAllocator;
 use crate::page::{Page, Utensil};
 
 pub(crate) struct Chapter<C> {
@@ -17,7 +18,7 @@ impl<C: Utensil> Chapter<C> {
 
     pub(crate) fn alloc(
         &mut self,
-        allocator: &dyn Allocator,
+        allocator: &dyn BookcaseAllocator,
         t_size: usize,
         t_align: usize,
         page_bytes: usize,
@@ -43,7 +44,7 @@ impl<C: Utensil> Chapter<C> {
         }
     }
 
-    pub(crate) fn destroy(&mut self, allocator: &dyn Allocator) {
+    pub(crate) fn destroy(&mut self, allocator: &dyn BookcaseAllocator) {
         for page in self.pages.iter_mut() {
             page.destroy(allocator)
         }

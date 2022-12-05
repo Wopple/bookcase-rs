@@ -1,10 +1,10 @@
-use std::alloc::Allocator;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::mem::{align_of, size_of};
 use std::sync::RwLock;
 
 use crate::{GrowthStrategy, SizeStrategy};
+use crate::allocator::BookcaseAllocator;
 use crate::chapter::Chapter;
 use crate::handle::Handle;
 use crate::page::{Page, Utensil};
@@ -113,7 +113,7 @@ const NUM_ALIGNS: usize = 5;
 /// Can allocate any type. All types will be allocated to their proper alignment. This is
 /// especially useful for processing heterogeneous granular data like parsing a JSON string
 /// by minimizing the frequency of calling into the operating system for allocation.
-pub struct MultiNotebook<A: Allocator, C: Utensil> {
+pub struct MultiNotebook<A: BookcaseAllocator, C: Utensil> {
     lock: RwLock<()>,
     allocator: A,
     size: SizeStrategy,
@@ -121,10 +121,10 @@ pub struct MultiNotebook<A: Allocator, C: Utensil> {
     chapters: RefCell<[Chapter<C>; NUM_ALIGNS]>,
 }
 
-unsafe impl<A: Allocator, C: Utensil> Send for MultiNotebook<A, C> {}
-unsafe impl<A: Allocator, C: Utensil> Sync for MultiNotebook<A, C> {}
+unsafe impl<A: BookcaseAllocator, C: Utensil> Send for MultiNotebook<A, C> {}
+unsafe impl<A: BookcaseAllocator, C: Utensil> Sync for MultiNotebook<A, C> {}
 
-impl<A: Allocator, C: Utensil> MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, C: Utensil> MultiNotebook<A, C> {
     pub fn new(
         allocator: A,
         size: SizeStrategy,
@@ -169,7 +169,7 @@ impl<A: Allocator, C: Utensil> MultiNotebook<A, C> {
     }
 }
 
-impl<A: Allocator, C: Utensil> Drop for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, C: Utensil> Drop for MultiNotebook<A, C> {
     fn drop(&mut self) {
         let _guard = self.lock.write().unwrap();
 
@@ -179,7 +179,7 @@ impl<A: Allocator, C: Utensil> Drop for MultiNotebook<A, C> {
     }
 }
 
-impl<A: Allocator, C: Utensil> ToString for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, C: Utensil> ToString for MultiNotebook<A, C> {
     fn to_string(&self) -> String {
         let _guard = self.lock.read().unwrap();
 
@@ -193,7 +193,7 @@ impl<A: Allocator, C: Utensil> ToString for MultiNotebook<A, C> {
     }
 }
 
-impl<A: Allocator, C: Utensil> Notebook for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, C: Utensil> Notebook for MultiNotebook<A, C> {
     fn alloc<T>(&self) -> Option<&mut T> {
         let t_size = size_of::<T>();
         let t_align = align_of::<T>();
@@ -219,7 +219,7 @@ impl<A: Allocator, C: Utensil> Notebook for MultiNotebook<A, C> {
 
 /// Can only allocate one type. This is especially useful for loading a lot of the same data
 /// into a cache line to increase cache hits during iteration.
-pub struct MonoNotebook<A: Allocator, C: Utensil, T> {
+pub struct MonoNotebook<A: BookcaseAllocator, C: Utensil, T> {
     lock: RwLock<()>,
     allocator: A,
     size: SizeStrategy,
@@ -228,10 +228,10 @@ pub struct MonoNotebook<A: Allocator, C: Utensil, T> {
     _pd: PhantomData<T>
 }
 
-unsafe impl<A: Allocator, C: Utensil, T> Send for MonoNotebook<A, C, T> {}
-unsafe impl<A: Allocator, C: Utensil, T> Sync for MonoNotebook<A, C, T> {}
+unsafe impl<A: BookcaseAllocator, C: Utensil, T> Send for MonoNotebook<A, C, T> {}
+unsafe impl<A: BookcaseAllocator, C: Utensil, T> Sync for MonoNotebook<A, C, T> {}
 
-impl<A: Allocator, C: Utensil, T> MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, C: Utensil, T> MonoNotebook<A, C, T> {
     pub fn new(
         allocator: A,
         size: SizeStrategy,
@@ -248,7 +248,7 @@ impl<A: Allocator, C: Utensil, T> MonoNotebook<A, C, T> {
     }
 }
 
-impl<A: Allocator, C: Utensil, T> ToString for MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, C: Utensil, T> ToString for MonoNotebook<A, C, T> {
     fn to_string(&self) -> String {
         let _guard = self.lock.read().unwrap();
 
@@ -256,7 +256,7 @@ impl<A: Allocator, C: Utensil, T> ToString for MonoNotebook<A, C, T> {
     }
 }
 
-impl<A: Allocator, T: Send + Sync, C: Utensil> TypedNotebook<T> for MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, T: Send + Sync, C: Utensil> TypedNotebook<T> for MonoNotebook<A, C, T> {
     fn alloc_t(&self) -> Option<&mut T> {
         let t_size = size_of::<T>();
         let t_align = align_of::<T>();
