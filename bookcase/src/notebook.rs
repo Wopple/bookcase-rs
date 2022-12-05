@@ -24,7 +24,7 @@ pub trait Notebook: Send + Sync {
         Some(t_ref)
     }
 
-    /// Initializes the memory with the given vqlue.
+    /// Initializes the memory with the given value.
     #[inline(always)]
     fn alloc_init<T>(&self, t: T) -> Option<&mut T> {
         let t_ref = self.alloc()?;
@@ -60,7 +60,7 @@ pub trait TypedNotebook<T>: Send + Sync {
         Some(t_ref)
     }
 
-    /// Initializes the memory with the given vqlue.
+    /// Initializes the memory with the given value.
     /// Moves a handle to the caller which will call drop on the value when the handle is dropped.
     #[inline(always)]
     fn alloc_init_t(&self, t: T) -> Option<&mut T> {
