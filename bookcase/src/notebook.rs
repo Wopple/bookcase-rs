@@ -113,23 +113,23 @@ const NUM_ALIGNS: usize = 5;
 /// Can allocate any type. All types will be allocated to their proper alignment. This is
 /// especially useful for processing heterogeneous granular data like parsing a JSON string
 /// by minimizing the frequency of calling into the operating system for allocation.
-pub struct MultiNotebook<A: BookcaseAllocator, C: Utensil> {
+pub struct MultiNotebook<A: BookcaseAllocator, U: Utensil> {
     lock: RwLock<()>,
     allocator: A,
     size: SizeStrategy,
     growth: GrowthStrategy,
-    chapters: RefCell<[Chapter<C>; NUM_ALIGNS]>,
+    chapters: RefCell<[Chapter<U>; NUM_ALIGNS]>,
 }
 
-unsafe impl<A: BookcaseAllocator, C: Utensil> Send for MultiNotebook<A, C> {}
-unsafe impl<A: BookcaseAllocator, C: Utensil> Sync for MultiNotebook<A, C> {}
+unsafe impl<A: BookcaseAllocator, U: Utensil> Send for MultiNotebook<A, U> {}
+unsafe impl<A: BookcaseAllocator, U: Utensil> Sync for MultiNotebook<A, U> {}
 
-impl<A: BookcaseAllocator, C: Utensil> MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, U: Utensil> MultiNotebook<A, U> {
     pub fn new(
         allocator: A,
         size: SizeStrategy,
         growth: GrowthStrategy,
-    ) -> MultiNotebook<A, C> {
+    ) -> MultiNotebook<A, U> {
         MultiNotebook {
             lock: RwLock::new(()),
             allocator,
@@ -150,26 +150,26 @@ impl<A: BookcaseAllocator, C: Utensil> MultiNotebook<A, C> {
         let _guard = self.lock.read().unwrap();
 
         [
-            self.chapters.borrow().get(0).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
+            self.chapters.borrow().get(0).unwrap().pages().iter().map(|p: &crate::page::Page<U>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(1).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
+            self.chapters.borrow().get(1).unwrap().pages().iter().map(|p: &crate::page::Page<U>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(2).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
+            self.chapters.borrow().get(2).unwrap().pages().iter().map(|p: &crate::page::Page<U>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(3).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
+            self.chapters.borrow().get(3).unwrap().pages().iter().map(|p: &crate::page::Page<U>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(4).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
+            self.chapters.borrow().get(4).unwrap().pages().iter().map(|p: &crate::page::Page<U>| {
                 p.clone_buffer()
             }).collect(),
         ]
     }
 }
 
-impl<A: BookcaseAllocator, C: Utensil> Drop for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, U: Utensil> Drop for MultiNotebook<A, U> {
     fn drop(&mut self) {
         let _guard = self.lock.write().unwrap();
 
@@ -179,7 +179,7 @@ impl<A: BookcaseAllocator, C: Utensil> Drop for MultiNotebook<A, C> {
     }
 }
 
-impl<A: BookcaseAllocator, C: Utensil> ToString for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, U: Utensil> ToString for MultiNotebook<A, U> {
     fn to_string(&self) -> String {
         let _guard = self.lock.read().unwrap();
 
@@ -193,7 +193,7 @@ impl<A: BookcaseAllocator, C: Utensil> ToString for MultiNotebook<A, C> {
     }
 }
 
-impl<A: BookcaseAllocator, C: Utensil> Notebook for MultiNotebook<A, C> {
+impl<A: BookcaseAllocator, U: Utensil> Notebook for MultiNotebook<A, U> {
     fn alloc<T>(&self) -> Option<&mut T> {
         let t_size = size_of::<T>();
         let t_align = align_of::<T>();
@@ -219,24 +219,24 @@ impl<A: BookcaseAllocator, C: Utensil> Notebook for MultiNotebook<A, C> {
 
 /// Can only allocate one type. This is especially useful for loading a lot of the same data
 /// into a cache line to increase cache hits during iteration.
-pub struct MonoNotebook<A: BookcaseAllocator, C: Utensil, T> {
+pub struct MonoNotebook<A: BookcaseAllocator, U: Utensil, T> {
     lock: RwLock<()>,
     allocator: A,
     size: SizeStrategy,
     growth: GrowthStrategy,
-    chapter: RefCell<Chapter<C>>,
+    chapter: RefCell<Chapter<U>>,
     _pd: PhantomData<T>
 }
 
-unsafe impl<A: BookcaseAllocator, C: Utensil, T> Send for MonoNotebook<A, C, T> {}
-unsafe impl<A: BookcaseAllocator, C: Utensil, T> Sync for MonoNotebook<A, C, T> {}
+unsafe impl<A: BookcaseAllocator, U: Utensil, T> Send for MonoNotebook<A, U, T> {}
+unsafe impl<A: BookcaseAllocator, U: Utensil, T> Sync for MonoNotebook<A, U, T> {}
 
-impl<A: BookcaseAllocator, C: Utensil, T> MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, U: Utensil, T> MonoNotebook<A, U, T> {
     pub fn new(
         allocator: A,
         size: SizeStrategy,
         growth: GrowthStrategy,
-    ) -> MonoNotebook<A, C, T> {
+    ) -> MonoNotebook<A, U, T> {
         MonoNotebook {
             lock: RwLock::new(()),
             allocator,
@@ -248,7 +248,7 @@ impl<A: BookcaseAllocator, C: Utensil, T> MonoNotebook<A, C, T> {
     }
 }
 
-impl<A: BookcaseAllocator, C: Utensil, T> ToString for MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, U: Utensil, T> ToString for MonoNotebook<A, U, T> {
     fn to_string(&self) -> String {
         let _guard = self.lock.read().unwrap();
 
@@ -256,7 +256,7 @@ impl<A: BookcaseAllocator, C: Utensil, T> ToString for MonoNotebook<A, C, T> {
     }
 }
 
-impl<A: BookcaseAllocator, T: Send + Sync, C: Utensil> TypedNotebook<T> for MonoNotebook<A, C, T> {
+impl<A: BookcaseAllocator, T: Send + Sync, U: Utensil> TypedNotebook<T> for MonoNotebook<A, U, T> {
     fn alloc_t(&self) -> Option<&mut T> {
         let t_size = size_of::<T>();
         let t_align = align_of::<T>();

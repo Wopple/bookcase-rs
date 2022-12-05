@@ -3,16 +3,16 @@ use core::alloc::Layout;
 use crate::allocator::BookcaseAllocator;
 use crate::page::{Page, Utensil};
 
-pub(crate) struct Chapter<C> {
-    pages: Vec<Page<C>>,
+pub(crate) struct Chapter<U> {
+    pages: Vec<Page<U>>,
 }
 
-impl<C: Utensil> Chapter<C> {
-    pub(crate) fn new() -> Chapter<C> {
+impl<U: Utensil> Chapter<U> {
+    pub(crate) fn new() -> Chapter<U> {
         Chapter { pages: vec![] }
     }
 
-    pub(crate) fn pages(&self) -> &[Page<C>] {
+    pub(crate) fn pages(&self) -> &[Page<U>] {
         &self.pages
     }
 
@@ -51,7 +51,7 @@ impl<C: Utensil> Chapter<C> {
     }
 }
 
-impl<C> ToString for Chapter<C> {
+impl<U> ToString for Chapter<U> {
     fn to_string(&self) -> String {
         self.pages
             .iter()

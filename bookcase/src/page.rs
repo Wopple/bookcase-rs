@@ -4,26 +4,26 @@ use core::ptr::NonNull;
 
 use crate::allocator::BookcaseAllocator;
 
-pub(crate) struct Page<C, T=u8> {
+pub(crate) struct Page<U, T=u8> {
     ptr: NonNull<T>,
     layout: Layout,
-    utensil: C,
+    utensil: U,
     _owns_ptr: PhantomData<T>,
 }
 
-impl<C: Utensil> Page<C> {
-    pub(crate) fn create(layout: Layout, allocator: &dyn BookcaseAllocator) -> Option<Page<C>> {
+impl<U: Utensil> Page<U> {
+    pub(crate) fn create(layout: Layout, allocator: &dyn BookcaseAllocator) -> Option<Page<U>> {
         if usize::BITS < 64 && layout.size() > isize::MAX as usize {
             return None;
         }
 
         let ptr = allocator.allocate(layout).ok()?.cast().as_ptr();
-        let config = C::new(ptr as usize, layout);
+        let utensil = U::new(ptr as usize, layout);
 
         Some(Page {
             ptr: unsafe { NonNull::new_unchecked(ptr) },
             layout,
-            utensil: config,
+            utensil,
             _owns_ptr: PhantomData,
         })
     }
@@ -66,7 +66,7 @@ impl<C: Utensil> Page<C> {
     }
 }
 
-impl<C> ToString for Page<C> {
+impl<U> ToString for Page<U> {
     fn to_string(&self) -> String {
         let mut s = String::from("\n  buffer:");
 
