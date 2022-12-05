@@ -2,7 +2,8 @@ use std::env::var;
 use proc_macro::TokenStream;
 
 /// Calling this will result in a compiler error if the release channel for the version of bookcase
-/// does not match the respective enabled features.
+/// does not match the respective enabled features. For more information see the README in the root
+/// repository:
 #[proc_macro]
 pub fn assert_release_channel(_: TokenStream) -> TokenStream {
     let version_str = var("CARGO_PKG_VERSION").unwrap();

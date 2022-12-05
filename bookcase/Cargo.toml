@@ -1,14 +1,19 @@
 [package]
-name = "bookcase"
+name = "bookcase_alloc"
+description = "An arena allocator"
+repository = "https://github.com/Wopple/bookcase-rs"
 authors = ["Daniel Tashjian <thewopple@gmail.com>"]
+license = "MIT OR Apache-2.0"
 version = "0.0.1"
+readme = "../README.md"
 edition = "2021"
 rust-version = "1.56.0"
 
 [features]
 default = ["stable"]
 
-# Use this feature to allow
+# Use this feature to allow types that themselves allocate to allocate in the notebooks.
+# Requires nightly.
 allocator_api = []
 
 # Exactly 1 of these release channels must be enabled.
@@ -17,5 +22,5 @@ beta = []
 experimental = []
 
 [dependencies]
-bookcase_macros = { path = "../bookcase_macros" }
+bookcase_alloc_macros = "=1.0.0"
 thiserror = "=1.0.37"

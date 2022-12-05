@@ -9,6 +9,7 @@ Experimental, do not use unless you are a 🤡.
 
 ## 📖 Glossary
 
+- Person: thread
 - Notebook: arena
 - Chapter: set of commonly aligned pages
 - Page: fixed sized buffer of raw bytes
@@ -30,6 +31,7 @@ This analogy is not perfect, but it's way better than what 'arena' has to offer!
 - Lean
 - Configurable
 - Building block for data structures
+- Minimal dependencies
 - Documented
 
 ## 🚫 Concessions
@@ -45,21 +47,23 @@ In rough priority order:
 - [ ] CD
 - [ ] Thread-local notebooks
 - [ ] Thread-safe notebooks (`Send` and `Sync`)
-- [ ] Notebooks are `Allocator`
 - [x] Bump allocation
 - [ ] Deallocation
-- [x] Typed notebook
-- [x] Untyped notebook
-- [x] Aligned allocation
-- [x] Configurable page size
-- [x] Configurable page growth
-- [x] No drop
-- [x] Auto drop
+- [x] Compiles on stable rust
+- [ ] Publish first stable version
+- [x] Typed notebook (`MonoNotebook`)
+- [x] Un-typed notebook (`MultiNotebook`)
+- [x] All allocations are aligned
+- [ ] `MultiNotebook` is `Allocator` (requires nightly)
+- [x] Configurable page base size
+- [x] Configurable page growth rate
+- [x] Non-dropping handles (`alloc`, `alloc_zeroed`, `alloc_init`)
+- [x] Auto-dropping handles (`new`)
 - [ ] Notebook merging
 
 ## 🌳 Versioning
 
-1. Backwards compatibility is listening to ocean waves break on the beach.
+1. Backwards compatibility is falling asleep to the sound of ocean waves breaking on the beach.
 2. *Assuming* backwards compatibility is torturing puppies.
 
 **Conclusion: SemVer is 🐍🛢**
@@ -85,7 +89,7 @@ This channel is the only one suitable for production use.
 
 ###### Beta
 
-This channel is for collecting well baked ideas that want to be stabilized.
+This channel is for collecting well baked ideas that are preparing for stabilization.
 
 ###### Experimental
 
@@ -113,6 +117,18 @@ its respective feature enabled. The default feature is of course `stable`. Enabl
 will also fail to compile. This is to prevent accidental use of beta and experimental channels in
 production user code.
 
+### ... Maggie?
+
+Maggie is my pet 🐷. She sucks at first, but you will eventually grow to love her.
+
+### Exceptions
+
+`bookcase_macros` is itself required to enforce the rules of `SemVer Maggie.1.0`. As such, it will
+only have a stable release channel.
+
 ## Contribution
 
-
+I created a [discord channel](https://discord.gg/VNjUtBh4UB). As of this writing it has a population
+of me. Read the Goals, Concessions, and Progress sections for ideas on what to work on, and speak
+with me about how to make changes I am likely to accept. You can also just give me feedback, tell me
+my code is terrible, or that I'm being too edgy. All feedback is welcome!

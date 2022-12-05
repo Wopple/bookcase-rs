@@ -1,7 +1,13 @@
 [package]
-name = "bookcase_macros"
+name = "bookcase_alloc_macros"
+description = "Companion procedural macro crate for bookcase_alloc"
+repository = "https://github.com/Wopple/bookcase-rs"
+authors = ["Daniel Tashjian <thewopple@gmail.com>"]
+license = "MIT OR Apache-2.0"
 version = "1.0.0"
+readme = "../README.md"
 edition = "2021"
+rust-version = "1.56.0"
 
 [lib]
 proc-macro = true

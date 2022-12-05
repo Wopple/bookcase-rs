@@ -7,7 +7,7 @@ use crate::{GrowthStrategy, SizeStrategy};
 use crate::allocator::BookcaseAllocator;
 use crate::chapter::Chapter;
 use crate::handle::Handle;
-use crate::page::{Page, Utensil};
+use crate::page::Utensil;
 
 pub trait Notebook: Send + Sync {
     fn alloc<T>(&self) -> Option<&mut T>;
@@ -150,19 +150,19 @@ impl<A: BookcaseAllocator, C: Utensil> MultiNotebook<A, C> {
         let _guard = self.lock.read().unwrap();
 
         [
-            self.chapters.borrow().get(0).unwrap().pages().iter().map(|p: &Page<C>| {
+            self.chapters.borrow().get(0).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(1).unwrap().pages().iter().map(|p: &Page<C>| {
+            self.chapters.borrow().get(1).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(2).unwrap().pages().iter().map(|p: &Page<C>| {
+            self.chapters.borrow().get(2).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(3).unwrap().pages().iter().map(|p: &Page<C>| {
+            self.chapters.borrow().get(3).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
                 p.clone_buffer()
             }).collect(),
-            self.chapters.borrow().get(4).unwrap().pages().iter().map(|p: &Page<C>| {
+            self.chapters.borrow().get(4).unwrap().pages().iter().map(|p: &crate::page::Page<C>| {
                 p.clone_buffer()
             }).collect(),
         ]

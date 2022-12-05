@@ -3,16 +3,22 @@
 version = 3
 
 [[package]]
-name = "bookcase"
 version = "0.0.1"
 dependencies = [
- "bookcase_macros",
+ "bookcase_alloc",
+ "bookcase_alloc_macros",
  "thiserror",
 ]
 
 [[package]]
-name = "bookcase_macros"
+name = "bookcase_alloc_macros"
 version = "1.0.0"
+
+[[package]]
+name = "bookcase_alloc_macros"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "949a52229dd9962814a786ae56b638f517be9d0084c1b7e88a5800138698bc5b"
 
 [[package]]
 name = "proc-macro2"
