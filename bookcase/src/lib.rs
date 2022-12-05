@@ -4,7 +4,7 @@ pub use notebook::*;
 pub use strategy::*;
 
 #[cfg(not(test))]
-::bookcase_macros::assert_release_channel!();
+::bookcase_alloc_macros::assert_release_channel!();
 
 pub(crate) mod allocator;
 pub(crate) mod chapter;
