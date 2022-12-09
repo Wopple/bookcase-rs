@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use crate::allocator::BookcaseAllocator;
+use crate::seal::Sealed;
 
 pub(crate) struct Page<U, T=u8> {
     ptr: NonNull<T>,
@@ -66,6 +67,8 @@ impl<U: Utensil> Page<U> {
     }
 }
 
+unsafe impl<U: Utensil> Send for Page<U, u8> {}
+
 impl<U> ToString for Page<U> {
     fn to_string(&self) -> String {
         let mut s = String::from("\n  buffer:");
@@ -84,7 +87,7 @@ impl<U> ToString for Page<U> {
     }
 }
 
-pub trait Utensil: Send + Sync {
+pub trait Utensil: Send + Sync + Sealed {
     fn new(addr: usize, layout: Layout) -> Self;
     fn can_alloc(&self, bytes: usize) -> bool;
     fn alloc(&mut self, bytes: usize) -> *mut u8;
@@ -93,15 +96,19 @@ pub trait Utensil: Send + Sync {
 }
 
 /// You cannot erase ink.
+///
 /// This causes the notebook to use bump allocation. This means an allocation merely increases an
-/// offset as its only write operation to reserve the memory. It also means deallocating is a no-op.
-/// This yields very high performance at the cost of being unable to deallocate memory until the
-/// whole notebook is dropped.
+/// offset as its only write operation to reserve the memory (unless the chapter is full and needs
+/// to allocate a new page). It also means deallocating is a no-op. This yields very high
+/// performance at the cost of being unable to deallocate memory until the whole notebook is
+/// dropped.
 pub struct Pen {
     addr: usize,
     layout: Layout,
     pub(crate) offset: usize,
 }
+
+impl Sealed for Pen {}
 
 impl Pen {
     #[inline(always)]

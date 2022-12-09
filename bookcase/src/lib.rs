@@ -12,28 +12,38 @@ pub(crate) mod error;
 pub(crate) mod handle;
 pub(crate) mod notebook;
 pub(crate) mod page;
+pub(crate) mod seal;
 pub(crate) mod strategy;
 
 #[cfg(test)]
 mod tests {
-    use crate::{GrowthStrategy, MonoNotebook, MultiNotebook, Notebook, SizeStrategy, TypedNotebook};
-
-    #[cfg(not(feature = "allocator_api"))]
-    use crate::allocator::stable_allocator::StdAllocator as Allocator;
-
     #[cfg(feature = "allocator_api")]
     use std::alloc::Global as Allocator;
 
-    use crate::page::Pen;
+    use crate::*;
+    #[cfg(not(feature = "allocator_api"))]
+    use crate::allocator::stable_allocator::StdAllocator as Allocator;
+    use crate::page::*;
 
     #[derive(Debug, Eq, PartialEq)]
-    struct S1 {
+    struct TestStruct {
         a: usize,
         b: isize,
     }
 
+    fn assert_send<T: Send>() {}
+    fn assert_sync<T: Sync>() {}
+
     #[test]
     fn test() {
+        assert_send::<PersonalMultiNotebook::<Allocator, Pen>>();
+        assert_send::<PublicMultiNotebook::<Allocator, Pen>>();
+        assert_send::<PersonalMonoNotebook::<Allocator, Pen, usize>>();
+        assert_send::<PublicMonoNotebook::<Allocator, Pen, usize>>();
+
+        assert_sync::<PublicMultiNotebook::<Allocator, Pen>>();
+        assert_sync::<PublicMonoNotebook::<Allocator, Pen, usize>>();
+
         {
             let notebook = MultiNotebook::<_, Pen>::new(
                 Allocator,
@@ -80,18 +90,18 @@ mod tests {
         }
 
         {
-            let typed_notebook = MonoNotebook::<_, Pen, S1>::new(
+            let typed_notebook = PersonalMonoNotebook::<_, Pen, TestStruct>::new(
                 Allocator,
                 SizeStrategy::ItemsPerPage(4),
                 GrowthStrategy::Constant,
             );
 
-            let s1 = typed_notebook.alloc_init_t(S1 {
+            let s1 = typed_notebook.alloc_init_t(TestStruct {
                 a: 0x01020304,
                 b: -0x04030201,
             });
 
-            assert_eq!(S1 { a: 16909060, b: -67305985 }, *s1.unwrap());
+            assert_eq!(TestStruct { a: 16909060, b: -67305985 }, *s1.unwrap());
         }
     }
 }

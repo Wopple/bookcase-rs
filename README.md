@@ -45,20 +45,22 @@ In rough priority order:
 
 - [ ] CI
 - [ ] CD
-- [ ] Thread-local notebooks
-- [ ] Thread-safe notebooks (`Send` and `Sync`)
-- [x] Bump allocation
+- [x] Thread-local notebooks (`Personal*Notebook: Send`)
+- [ ] Thread-safe notebooks (`Public*Notebook: Send + Sync`, needs more rigor)
+- [x] Bump allocation (`Pen`)
 - [ ] Deallocation
 - [x] Compiles on stable rust
+- [x] Publish first experimental version
+- [ ] Publish first beta version
 - [ ] Publish first stable version
-- [x] Typed notebook (`MonoNotebook`)
-- [x] Un-typed notebook (`MultiNotebook`)
+- [x] Heterogeneous notebook (`MultiNotebook`)
+- [x] Homogeneous notebook (`MonoNotebook`)
 - [x] All allocations are aligned
 - [ ] `MultiNotebook` is `Allocator` (requires nightly)
-- [x] Configurable page base size
-- [x] Configurable page growth rate
-- [x] Non-dropping handles (`alloc`, `alloc_zeroed`, `alloc_init`)
-- [x] Auto-dropping handles (`new`)
+- [x] Configurable page base size (`SizeStrategy`)
+- [x] Configurable page growth rate (`GrowthStrategy`)
+- [x] Non-dropping exclusive references (`alloc*() -> &mut T`)
+- [x] Auto-dropping handles (`new*() -> Handle<T>`)
 - [ ] Notebook merging
 
 ## 🌳 Versioning
