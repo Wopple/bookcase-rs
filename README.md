@@ -31,7 +31,7 @@ This analogy is not perfect, but it's way better than what 'arena' has to offer!
 - Lean
 - Configurable
 - Building block for data structures
-- Minimal dependencies
+- No external dependencies
 - Documented
 
 ## 🚫 Concessions
@@ -45,18 +45,20 @@ In rough priority order:
 
 - [ ] CI
 - [ ] CD
+- [x] No dependencies
+- [ ] Well documented
 - [x] Thread-local notebooks (`Personal*Notebook: Send`)
-- [ ] Thread-safe notebooks (`Public*Notebook: Send + Sync`, needs more rigor)
+- [ ] Thread-safe notebooks (`Public*Notebook: Send + Sync`, very unsafe)
 - [x] Bump allocation (`Pen`)
 - [ ] Deallocation
 - [x] Compiles on stable rust
 - [x] Publish first experimental version
 - [ ] Publish first beta version
 - [ ] Publish first stable version
-- [x] Heterogeneous notebook (`MultiNotebook`)
-- [x] Homogeneous notebook (`MonoNotebook`)
+- [x] Heterogeneous notebook (`*MultiNotebook: Notebook`)
+- [x] Homogeneous notebook (`*MonoNotebook<T>: TypedNotebook<T>`)
 - [x] All allocations are aligned
-- [ ] `MultiNotebook` is `Allocator` (requires nightly)
+- [ ] `*MultiNotebook: Allocator` (requires nightly)
 - [x] Configurable page base size (`SizeStrategy`)
 - [x] Configurable page growth rate (`GrowthStrategy`)
 - [x] Non-dropping exclusive references (`alloc*() -> &mut T`)
@@ -65,10 +67,14 @@ In rough priority order:
 
 ## 🌳 Versioning
 
+### Philosophy
+
 1. Backwards compatibility is falling asleep to the sound of ocean waves breaking on the beach.
 2. *Assuming* backwards compatibility is torturing puppies.
 
 **Conclusion: SemVer is 🐍🛢**
+
+### Consequence
 
 Unfortunately, cargo is tied to SemVer. Fortunately, SemVer is versioned. This means I can create my
 own version of SemVer! 😈 Call it `SemVer Maggie.1.0`. Here's how it works:
@@ -95,7 +101,7 @@ This channel is for collecting well baked ideas that are preparing for stabiliza
 
 ###### Experimental
 
-This channel is the wild west where all bets are off.
+This channel is the wild west where all bets are off and clown behavior is the norm.
 
 #### Format: `stable.beta.experimental`
 
@@ -103,6 +109,10 @@ This channel is the wild west where all bets are off.
 2. The version is in the beta channel when `beta > 0`, otherwise...
 3. The version is in the stable channel when `stable > 0`, otherwise...
 4. The version is invalid.
+
+Therefore all stable releases are a bump to the "major" version suggesting to the downstream
+developer they should consider The Ironclad Rule even if they are unfamiliar
+with `SemVer Maggie.1.0`.
 
 #### Examples
 
@@ -112,7 +122,7 @@ This channel is the wild west where all bets are off.
 - `=2.0.1` - experimental `v1` based off stable `v2`
 - `=0.0.0` - invalid
 
-#### But I Like `bookcase = "^1"`!
+#### But I Like `bookcase_alloc = "^1"`!
 
 Then get accustomed to compiler errors. A version within a release channel will only compile with
 its respective feature enabled. The default feature is of course `stable`. Enabling more than one
@@ -125,12 +135,13 @@ Maggie is my pet 🐷. She sucks at first, but you will eventually grow to love 
 
 ### Exceptions
 
-`bookcase_macros` is itself required to enforce the rules of `SemVer Maggie.1.0`. As such, it will
-only have a stable release channel.
+`bookcase_alloc_macros` is itself required to enforce the rules of `SemVer Maggie.1.0`. As such, it
+will only have a stable release channel.
 
 ## Contribution
 
 I created a [discord channel](https://discord.gg/VNjUtBh4UB). As of this writing it has a population
 of me. Read the Goals, Concessions, and Progress sections for ideas on what to work on, and speak
-with me about how to make changes I am likely to accept. You can also just give me feedback, tell me
-my code is terrible, or that I'm being too edgy. All feedback is welcome!
+with me about how to make changes I am likely to accept. You can also just ask questions and give me
+feedback: feature requests, tell me my code is terrible or that I'm being too edgy. All feedback is
+welcome!

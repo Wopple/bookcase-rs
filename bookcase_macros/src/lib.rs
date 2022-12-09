@@ -1,9 +1,11 @@
 use std::env::var;
 use proc_macro::TokenStream;
 
-/// Calling this will result in a compiler error if the release channel for the version of bookcase
-/// does not match the respective enabled features. For more information see the README in the root
-/// repository:
+/// Calling this will result in a compiler error if the release channel for the version of
+/// `bookcase_alloc` does not match the respective enabled features. For more information see the
+/// README in the root repository:
+///
+/// https://github.com/Wopple/bookcase-rs/blob/main/README.md#-versioning
 #[proc_macro]
 pub fn assert_release_channel(_: TokenStream) -> TokenStream {
     let version_str = var("CARGO_PKG_VERSION").unwrap();
@@ -16,11 +18,11 @@ pub fn assert_release_channel(_: TokenStream) -> TokenStream {
         format!(
             "
             #[cfg(feature = \"stable\")]
-            compile_error!(\"[bookcase] {0} is an experimental version, but stable feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is an experimental version, but stable feature was enabled.\");
             #[cfg(feature = \"beta\")]
-            compile_error!(\"[bookcase] {0} is an experimental version, but beta feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is an experimental version, but beta feature was enabled.\");
             #[cfg(not(feature = \"experimental\"))]
-            compile_error!(\"[bookcase] {0} is an experimental version, but experimental feature was disabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is an experimental version, but experimental feature was disabled.\");
             ",
             version_str,
         )
@@ -28,11 +30,11 @@ pub fn assert_release_channel(_: TokenStream) -> TokenStream {
         format!(
             "
             #[cfg(feature = \"stable\")]
-            compile_error!(\"[bookcase] {0} is a beta version, but stable feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a beta version, but stable feature was enabled.\");
             #[cfg(not(feature = \"beta\"))]
-            compile_error!(\"[bookcase] {0} is a beta version, but beta feature was disabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a beta version, but beta feature was disabled.\");
             #[cfg(feature = \"experimental\")]
-            compile_error!(\"[bookcase] {0} is a beta version, but experimental feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a beta version, but experimental feature was enabled.\");
             ",
             version_str,
         )
@@ -40,15 +42,15 @@ pub fn assert_release_channel(_: TokenStream) -> TokenStream {
         format!(
             "
             #[cfg(not(feature = \"stable\"))]
-            compile_error!(\"[bookcase] {0} is a stable version, but stable feature was disabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a stable version, but stable feature was disabled.\");
             #[cfg(feature = \"beta\")]
-            compile_error!(\"[bookcase] {0} is a stable version, but beta feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a stable version, but beta feature was enabled.\");
             #[cfg(feature = \"experimental\")]
-            compile_error!(\"[bookcase] {0} is a stable version, but experimental feature was enabled.\");
+            compile_error!(\"[bookcase_alloc] {0} is a stable version, but experimental feature was enabled.\");
             ",
             version_str,
         )
     } else {
-        format!("compile_error!(\"[bookcase] {} is not a valid version.\");", version_str)
+        format!("compile_error!(\"[bookcase_alloc] {} is not a valid version.\");", version_str)
     }.parse().unwrap()
 }

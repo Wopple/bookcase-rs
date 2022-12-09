@@ -23,4 +23,3 @@ experimental = []
 
 [dependencies]
 bookcase_alloc_macros = "=1.0.0"
-thiserror = "=1.0.37"
