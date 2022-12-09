@@ -4,7 +4,7 @@ description = "An arena allocator"
 repository = "https://github.com/Wopple/bookcase-rs"
 authors = ["Daniel Tashjian <thewopple@gmail.com>"]
 license = "MIT OR Apache-2.0"
-version = "0.0.1"
+version = "0.0.2"
 readme = "../README.md"
 edition = "2021"
 rust-version = "1.56.0"
@@ -22,4 +22,4 @@ beta = []
 experimental = []
 
 [dependencies]
-bookcase_alloc_macros = "=1.0.0"
+bookcase_alloc_macros = "=2.0.0"
