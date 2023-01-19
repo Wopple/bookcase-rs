@@ -1,6 +1,9 @@
 #![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
+pub use allocator::StdAllocator;
+pub use handle::Handle;
 pub use notebook::*;
+pub use page::*;
 pub use strategy::*;
 
 #[cfg(not(test))]
@@ -17,15 +20,9 @@ pub(crate) mod strategy;
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "allocator_api")]
-    use std::alloc::Global as Allocator;
-
     use crate::*;
-    #[cfg(not(feature = "allocator_api"))]
-    use crate::allocator::stable_allocator::StdAllocator as Allocator;
-    use crate::page::*;
 
-    #[derive(Debug, Eq, PartialEq)]
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
     struct TestStruct {
         a: usize,
         b: isize,
@@ -36,17 +33,17 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_send::<PersonalMultiNotebook::<Allocator, Pen>>();
-        assert_send::<PublicMultiNotebook::<Allocator, Pen>>();
-        assert_send::<PersonalMonoNotebook::<Allocator, Pen, usize>>();
-        assert_send::<PublicMonoNotebook::<Allocator, Pen, usize>>();
+        assert_send::<PersonalMultiNotebook::<StdAllocator, Pen>>();
+        assert_send::<PublicMultiNotebook::<StdAllocator, Pen>>();
+        assert_send::<PersonalMonoNotebook::<StdAllocator, Pen, usize>>();
+        assert_send::<PublicMonoNotebook::<StdAllocator, Pen, usize>>();
 
-        assert_sync::<PublicMultiNotebook::<Allocator, Pen>>();
-        assert_sync::<PublicMonoNotebook::<Allocator, Pen, usize>>();
+        assert_sync::<PublicMultiNotebook::<StdAllocator, Pen>>();
+        assert_sync::<PublicMonoNotebook::<StdAllocator, Pen, usize>>();
 
         {
-            let notebook = MultiNotebook::<_, Pen>::new(
-                Allocator,
+            let notebook = PersonalMultiNotebook::<_, Pen>::new(
+                StdAllocator,
                 SizeStrategy::WordsPerPage(4),
                 GrowthStrategy::Constant,
             );
@@ -84,14 +81,14 @@ mod tests {
 
             assert_eq!(770, *i32_value);
 
-            let str_value = notebook.alloc_init(String::from("1u8"));
+            let str_value = notebook.new(String::from("1u8")).unwrap();
 
-            assert_eq!("1u8", str_value.unwrap());
+            assert_eq!("1u8", *str_value);
         }
 
         {
             let typed_notebook = PersonalMonoNotebook::<_, Pen, TestStruct>::new(
-                Allocator,
+                StdAllocator,
                 SizeStrategy::ItemsPerPage(4),
                 GrowthStrategy::Constant,
             );

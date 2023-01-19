@@ -17,7 +17,7 @@ impl<T> Slice<T> {
     }
 }
 
-pub(crate) struct StdAllocator;
+pub struct StdAllocator;
 
 impl BookcaseAllocator for StdAllocator {
     #[inline(always)]
