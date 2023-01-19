@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/Wopple/bookcase-rs/blob/main/LICENSE.md)
 [![CI](https://github.com/Wopple/bookcase-rs/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Wopple/bookcase-rs/actions/workflows/ci.yaml)
 
 # 📚 Bookcase - An Arena Allocator
