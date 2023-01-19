@@ -99,6 +99,35 @@ In rough priority order:
   - [ ] `combine<T>(notebooks: Vec<PersonalMonoNotebook<T>>) -> PersonalMonoNotebook<T>`
   - Zero page allocations
 
+## Usage Example
+
+```rust
+use bookcase_alloc::{
+    GrowthStrategy,
+    Handle,
+    Notebook,
+    Pen,
+    PersonalMultiNotebook,
+    SizeStrategy,
+    StdAllocator,
+};
+
+fn main() -> Result<(), ()> {
+    let notebook = PersonalMultiNotebook::<_, Pen>::new(
+        StdAllocator,
+        SizeStrategy::WordsPerPage(4096),
+        GrowthStrategy::Constant,
+    );
+
+    let my_str: Handle<String> = notebook.new(String::from("Hello, World!")).ok_or(())?;
+
+    println!("{}", my_str);
+    Ok(())
+    // my_str is dropped
+    // notebook is dropped
+}
+```
+
 ## 🌳 Versioning
 
 ### Philosophy

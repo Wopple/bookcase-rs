@@ -1,5 +1,10 @@
+#[cfg(feature = "allocator_api")]
+pub use std::alloc::Global as StdAllocator;
 use std::alloc::Layout;
 use std::ptr::NonNull;
+
+#[cfg(not(feature = "allocator_api"))]
+pub use stable_allocator::StdAllocator;
 
 use crate::error::Error;
 

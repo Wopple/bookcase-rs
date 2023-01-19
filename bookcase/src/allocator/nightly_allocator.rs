@@ -1,4 +1,4 @@
-use std::alloc::{Global, Allocator, Layout};
+use std::alloc::{Allocator, Layout};
 use std::ptr::NonNull;
 use crate::allocator::BookcaseAllocator;
 use crate::error::Error;

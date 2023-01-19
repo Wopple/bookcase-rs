@@ -25,6 +25,12 @@ impl<'book, T: fmt::Debug> fmt::Debug for Handle<'book, T> {
     }
 }
 
+impl<'book, T: fmt::Display> fmt::Display for Handle<'book, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(self.t, f)
+    }
+}
+
 impl<'book, T> Deref for Handle<'book, T> {
     type Target = T;
 

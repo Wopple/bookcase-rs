@@ -11,11 +11,11 @@ use crate::page::Utensil;
 use crate::seal::Sealed;
 
 pub trait Notebook: Sealed {
-    fn alloc<T>(&self) -> Option<&mut T>;
+    fn alloc<T: Copy>(&self) -> Option<&mut T>;
 
     /// Zeroes all bytes allocated including padding.
     #[inline(always)]
-    fn alloc_zero<T>(&self) -> Option<&mut T> {
+    fn alloc_zero<T: Copy>(&self) -> Option<&mut T> {
         let t_ref = self.alloc()?;
 
         unsafe {
@@ -27,7 +27,7 @@ pub trait Notebook: Sealed {
 
     /// Initializes the memory with the given value.
     #[inline(always)]
-    fn alloc_init<T>(&self, t: T) -> Option<&mut T> {
+    fn alloc_init<T: Copy>(&self, t: T) -> Option<&mut T> {
         let t_ref = self.alloc()?;
 
         *t_ref = t;
@@ -35,23 +35,18 @@ pub trait Notebook: Sealed {
     }
 
     /// Moves a handle to the caller which will call drop on the value when the handle is dropped.
-    #[inline(always)]
-    fn new<T>(&self, t: T) -> Option<Handle<T>> where Self: Sized {
-        let t_ref = self.alloc_init(t)?;
-
-        Some(Handle::new(self, t_ref))
-    }
+    fn new<T>(&self, t: T) -> Option<Handle<T>> where Self: Sized;
 
     fn dealloc<T>(&self, t: &T) -> bool;
 }
 
 /// *_t suffix is used so as not to clash with Notebook's interface.
 pub trait TypedNotebook<T>: Sealed {
-    fn alloc_t(&self) -> Option<&mut T>;
+    fn alloc_t(&self) -> Option<&mut T> where T: Copy;
 
     /// Zeroes all bytes allocated including padding.
     #[inline(always)]
-    fn alloc_zero_t(&self) -> Option<&mut T> {
+    fn alloc_zero_t(&self) -> Option<&mut T> where T: Copy {
         let t_ref = self.alloc_t()?;
 
         unsafe {
@@ -63,7 +58,7 @@ pub trait TypedNotebook<T>: Sealed {
 
     /// Initializes the memory with the given value.
     #[inline(always)]
-    fn alloc_init_t(&self, t: T) -> Option<&mut T> {
+    fn alloc_init_t(&self, t: T) -> Option<&mut T> where T: Copy {
         let t_ref = self.alloc_t()?;
 
         *t_ref = t;
@@ -71,12 +66,7 @@ pub trait TypedNotebook<T>: Sealed {
     }
 
     /// Moves a handle to the caller which will call drop on the value when the handle is dropped.
-    #[inline(always)]
-    fn new_t(&self, t: T) -> Option<Handle<T>> where Self: Sized {
-        let t_ref = self.alloc_init_t(t)?;
-
-        Some(Handle::new(self, t_ref))
-    }
+    fn new_t(&self, t: T) -> Option<Handle<T>> where Self: Sized;
 
     fn dealloc_t(&self, t: &T) -> bool;
 }
@@ -84,17 +74,17 @@ pub trait TypedNotebook<T>: Sealed {
 /// Allows Notebooks to be used as TypedNotebooks.
 impl<N: Notebook, T> TypedNotebook<T> for N {
     #[inline(always)]
-    fn alloc_t(&self) -> Option<&mut T> {
+    fn alloc_t(&self) -> Option<&mut T> where T: Copy {
         self.alloc::<T>()
     }
 
     #[inline(always)]
-    fn alloc_zero_t(&self) -> Option<&mut T> {
+    fn alloc_zero_t(&self) -> Option<&mut T> where T: Copy {
         self.alloc_zero::<T>()
     }
 
     #[inline(always)]
-    fn alloc_init_t(&self, t: T) -> Option<&mut T> {
+    fn alloc_init_t(&self, t: T) -> Option<&mut T> where T: Copy {
         self.alloc_init::<T>(t)
     }
 
@@ -228,10 +218,20 @@ impl<A: BookcaseAllocator, U: Utensil> ToString for PersonalMultiNotebook<A, U> 
 }
 
 impl<A: BookcaseAllocator, U: Utensil> Notebook for PersonalMultiNotebook<A, U> {
+    #[inline(always)]
     fn alloc<T>(&self) -> Option<&mut T> {
         self.alloc_impl()
     }
 
+    #[inline(always)]
+    fn new<T>(&self, t: T) -> Option<Handle<T>> where Self: Sized {
+        let t_ref = self.alloc_impl()?;
+
+        *t_ref = t;
+        Some(Handle::new(self, t_ref))
+    }
+
+    #[inline(always)]
     fn dealloc<T>(&self, t: &T) -> bool {
         self.dealloc_impl(t)
     }
@@ -277,12 +277,23 @@ impl<A: BookcaseAllocator, U: Utensil> ToString for PublicMultiNotebook<A, U> {
 }
 
 impl<A: BookcaseAllocator, U: Utensil> Notebook for PublicMultiNotebook<A, U> {
+    #[inline(always)]
     fn alloc<T>(&self) -> Option<&mut T> {
         let _guard = self.lock.write().unwrap();
 
         self.alloc_impl()
     }
 
+    #[inline(always)]
+    fn new<T>(&self, t: T) -> Option<Handle<T>> where Self: Sized {
+        let _guard = self.lock.write().unwrap();
+        let t_ref = self.alloc_impl()?;
+
+        *t_ref = t;
+        Some(Handle::new(self, t_ref))
+    }
+
+    #[inline(always)]
     fn dealloc<T>(&self, t: &T) -> bool {
         let _guard = self.lock.write().unwrap();
 
@@ -370,6 +381,13 @@ impl<A: BookcaseAllocator, U: Utensil, T> TypedNotebook<T> for PersonalMonoNoteb
         self.alloc_t_impl()
     }
 
+    fn new_t(&self, t: T) -> Option<Handle<T>> where Self: Sized {
+        let t_ref = self.alloc_t_impl()?;
+
+        *t_ref = t;
+        Some(Handle::new(self, t_ref))
+    }
+
     fn dealloc_t(&self, t: &T) -> bool {
         self.dealloc_t_impl(t)
     }
@@ -407,6 +425,14 @@ impl<A: BookcaseAllocator, U: Utensil, T> TypedNotebook<T> for PublicMonoNoteboo
         let _guard = self.lock.write().unwrap();
 
         self.alloc_t_impl()
+    }
+
+    fn new_t(&self, t: T) -> Option<Handle<T>> where Self: Sized {
+        let _guard = self.lock.write().unwrap();
+        let t_ref = self.alloc_t_impl()?;
+
+        *t_ref = t;
+        Some(Handle::new(self, t_ref))
     }
 
     fn dealloc_t(&self, t: &T) -> bool {
