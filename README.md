@@ -1,7 +1,9 @@
+[![CI](https://github.com/Wopple/bookcase-rs/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/Wopple/bookcase-rs/actions/workflows/ci.yaml)
+
 # 📚 Bookcase - An Arena Allocator
 
 I wanted to learn arenas, so I implemented my own. Then I noticed the existing arena crates were not
-to my liking.
+to my liking. So I created this project.
 
 ## 🕐 Project Status
 
@@ -44,25 +46,44 @@ This analogy is not perfect, but it's way better than what 'arena' has to offer!
 In rough priority order:
 
 - [ ] CI
+  - [x] Stable Tests
+  - [x] Nightly Tests
+  - [ ] Channel aware
 - [ ] CD
+  - [ ] Publish experimental versions
+  - [ ] Publish beta versions
+  - [ ] Publish stable versions
 - [x] No dependencies
 - [ ] Well documented
-- [x] Thread-local notebooks (`Personal*Notebook: Send`)
-- [ ] Thread-safe notebooks (`Public*Notebook: Send + Sync`, very unsafe)
-- [x] Bump allocation (`Pen`)
+- [x] Thread-local notebooks
+  - `Personal*Notebook: Send`
+- [ ] Thread-safe notebooks
+  - `Public*Notebook: Send + Sync`
+  - [x] Implemented
+  - [ ] Thread-safety ensured
+- [x] Bump allocation
+  - `Pen: Utensil`
 - [ ] Deallocation
+  - `Pencil: Utensil`
 - [x] Compiles on stable rust
 - [x] Publish first experimental version
 - [ ] Publish first beta version
 - [ ] Publish first stable version
-- [x] Heterogeneous notebook (`*MultiNotebook: Notebook`)
-- [x] Homogeneous notebook (`*MonoNotebook<T>: TypedNotebook<T>`)
+- [x] Heterogeneous notebook
+  - `*MultiNotebook: Notebook`
+- [x] Homogeneous notebook
+  - `*MonoNotebook<T>: TypedNotebook<T>`
 - [x] All allocations are aligned
-- [ ] `*MultiNotebook: Allocator` (requires nightly)
-- [x] Configurable page base size (`SizeStrategy`)
-- [x] Configurable page growth rate (`GrowthStrategy`)
-- [x] Non-dropping exclusive references (`alloc*() -> &mut T`)
-- [x] Auto-dropping handles (`new*() -> Handle<T>`)
+  - `*MultiNotebook: Allocator`
+  - Requires nightly
+- [x] Configurable base size of page
+  - `SizeStrategy`
+- [x] Configurable growth rate of page
+  - `GrowthStrategy`
+- [x] Non-dropping exclusive references
+  - `alloc*() -> &mut T`
+- [x] Auto-dropping handles
+  - `new*() -> Handle<T>`
 - [ ] Notebook merging
 
 ## 🌳 Versioning
