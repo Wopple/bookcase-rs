@@ -1,0 +1,47 @@
+name: CI
+
+on: push
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  stable-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+
+    - uses: Swatinem/rust-cache@v1
+      with:
+        sharedKey: ci-cd
+
+    - name: Unit Tests
+      run: cargo +stable test --lib --verbose --no-fail-fast --package bookcase_alloc
+      env:
+        RUST_BACKTRACE: 1
+
+  nightly-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+
+    - uses: Swatinem/rust-cache@v1
+      with:
+        sharedKey: ci-cd
+
+    - name: Unit Tests
+      run: cargo +nightly test --lib --verbose --no-fail-fast --package bookcase_alloc
+      env:
+        RUST_BACKTRACE: 1
