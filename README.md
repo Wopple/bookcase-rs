@@ -75,7 +75,8 @@ In rough priority order:
 - [x] Homogeneous notebook
   - `*MonoNotebook<T>: TypedNotebook<T>`
 - [x] All allocations are aligned
-  - `*MultiNotebook: Allocator`
+- [x] Integrate with the `allocator_api` feature
+  - `*MultiNotebook: std::alloc::Allocator`
   - Requires nightly
 - [x] Configurable base size of page
   - `SizeStrategy`
@@ -91,8 +92,8 @@ In rough priority order:
 
 ### Philosophy
 
-1. Backwards compatibility is falling asleep to the sound of ocean waves breaking on the beach.
-2. *Assuming* backwards compatibility is torturing puppies.
+1. Backwards compatibility is like falling asleep to the sound of ocean waves breaking on the beach.
+2. *Assuming* backwards compatibility is like torturing puppies.
 
 **Conclusion: SemVer is 🐍🛢**
 
