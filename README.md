@@ -8,7 +8,7 @@ to my liking. So I created this project.
 
 ## 🕐 Project Status
 
-Experimental, do not use unless you are a 🤡.
+Experimental: do not use unless you are a 🤡.
 
 ## 📖 Glossary
 
@@ -62,6 +62,8 @@ In rough priority order:
   - `Public*Notebook: Send + Sync`
   - [x] Implemented
   - [ ] Thread-safety ensured
+- [x] Zero panics
+- [ ] Graceful handling of memory errors
 - [x] Bump allocation
   - `Pen: Utensil`
 - [ ] Deallocation
@@ -83,10 +85,19 @@ In rough priority order:
 - [x] Configurable growth rate of page
   - `GrowthStrategy`
 - [x] Non-dropping exclusive references
-  - `alloc*() -> &mut T`
+  - `alloc<T>(&self) -> &mut T`
+  - `alloc_zero<T>(&self) -> &mut T`
+  - `alloc_init<T>(&self, t: T) -> &mut T`
+  - `alloc_t(&self) -> &mut T`
+  - `alloc_zero_t(&self) -> &mut T`
+  - `alloc_init_t(&self, t: T) -> &mut T`
 - [x] Auto-dropping handles
-  - `new*() -> Handle<T>`
+  - `new<T>(&self, t: T) -> Handle<T>`
+  - `new_t(&self, t: T) -> Handle<T>`
 - [ ] Notebook merging
+  - [ ] `combine(notebooks: Vec<PersonalMultiNotebook>) -> PersonalMultiNotebook`
+  - [ ] `combine<T>(notebooks: Vec<PersonalMonoNotebook<T>>) -> PersonalMonoNotebook<T>`
+  - Zero page allocations
 
 ## 🌳 Versioning
 
