@@ -148,3 +148,84 @@ impl Utensil for Pen {
     fn dealloc(&mut self, _: *const u8) {
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::mem::size_of;
+
+    use crate::*;
+
+    macro_rules! new_page {
+        ($layout:ty) => {
+            Page::<crate::Pen>::create(
+                std::alloc::Layout::new::<$layout>(),
+                &crate::StdAllocator,
+            ).expect(line_str!())
+        };
+        ($layout:ty, $utensil:ty) => {
+            Page::<crate::$utensil>::create(
+                std::alloc::Layout::new::<$layout>(),
+                &crate::StdAllocator,
+            ).expect(line_str!())
+        };
+    }
+
+    #[test]
+    fn can_allocate_full_size() {
+        assert!(new_page!(usize).can_alloc(size_of::<usize>()));
+    }
+
+    #[test]
+    fn cannot_allocate_greater_than_full_size() {
+        assert!(!new_page!(usize).can_alloc(size_of::<usize>() + 1));
+    }
+
+    #[test]
+    fn can_allocate_multiple() {
+        let mut page = new_page!([usize; 4]);
+
+        assert!(page.can_alloc(size_of::<usize>()));
+        page.alloc(size_of::<usize>());
+        assert!(page.can_alloc(size_of::<usize>()));
+        page.alloc(size_of::<usize>());
+        assert!(page.can_alloc(size_of::<usize>()));
+        page.alloc(size_of::<usize>());
+        assert!(page.can_alloc(size_of::<usize>()));
+        page.alloc(size_of::<usize>());
+        assert!(!page.can_alloc(size_of::<usize>()));
+    }
+
+    #[test]
+    fn can_allocate_partial() {
+        let mut page = new_page!(u128);
+
+        assert!(page.can_alloc(size_of::<u64>()));
+        page.alloc(size_of::<u64>());
+        assert!(page.can_alloc(size_of::<u32>()));
+        page.alloc(size_of::<u32>());
+        assert!(page.can_alloc(size_of::<u16>()));
+        page.alloc(size_of::<u16>());
+        assert!(page.can_alloc(size_of::<u8>()));
+        page.alloc(size_of::<u8>());
+        assert!(page.can_alloc(size_of::<u8>()));
+        page.alloc(size_of::<u8>());
+        assert!(!page.can_alloc(size_of::<u8>()));
+    }
+
+    #[test]
+    fn pen_can_always_deallocate() {
+        let mut page = new_page!(u128);
+
+        assert!(page.can_alloc(size_of::<u64>()));
+        page.alloc(size_of::<u64>());
+        assert!(page.can_alloc(size_of::<u32>()));
+        page.alloc(size_of::<u32>());
+        assert!(page.can_alloc(size_of::<u16>()));
+        page.alloc(size_of::<u16>());
+        assert!(page.can_alloc(size_of::<u8>()));
+        page.alloc(size_of::<u8>());
+        assert!(page.can_alloc(size_of::<u8>()));
+        page.alloc(size_of::<u8>());
+        assert!(!page.can_alloc(size_of::<u8>()));
+    }
+}

@@ -102,6 +102,7 @@ impl<N: Notebook, T> TypedNotebook<T> for N {
 const NUM_ALIGNS: usize = 5;
 
 impl Sealed for () {}
+
 impl Sealed for RwLock<()> {}
 
 /// Can allocate any type. All types will be allocated to their proper alignment. This is
@@ -305,7 +306,7 @@ unsafe impl<A: BookcaseAllocator, U: Utensil> Sync for PublicMultiNotebook<A, U>
 
 /// Can only allocate one type. This is especially useful for loading a lot of the same data
 /// into a cache line to increase cache hits during iteration.
-pub struct MonoNotebook<A: BookcaseAllocator, U: Utensil, T, L=()> {
+pub struct MonoNotebook<A: BookcaseAllocator, U: Utensil, T, L = ()> {
     allocator: A,
     size: SizeStrategy,
     growth: GrowthStrategy,
@@ -447,4 +448,96 @@ unsafe impl<A: BookcaseAllocator, U: Utensil, T> Sync for PublicMonoNotebook<A, 
 #[inline(always)]
 fn chapter_idx(t_align: usize) -> usize {
     t_align.trailing_zeros().min(NUM_ALIGNS as u32 - 1) as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    fn assert_send<T: Send>() {}
+
+    fn assert_sync<T: Sync>() {}
+
+    #[test]
+    fn ensure_notebooks_are_send() {
+        assert_send::<PersonalMultiNotebook<StdAllocator, Pen>>();
+        assert_send::<PublicMultiNotebook<StdAllocator, Pen>>();
+        assert_send::<PersonalMonoNotebook<StdAllocator, Pen, usize>>();
+        assert_send::<PublicMonoNotebook<StdAllocator, Pen, usize>>();
+    }
+
+    #[test]
+    fn ensure_public_notebooks_are_sync() {
+        assert_sync::<PublicMultiNotebook<StdAllocator, Pen>>();
+        assert_sync::<PublicMonoNotebook<StdAllocator, Pen, usize>>();
+    }
+
+
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    struct TestStruct {
+        a: usize,
+        b: isize,
+    }
+
+    #[test]
+    fn test_multi_notebook() {
+        let notebook = PersonalMultiNotebook::<_, Pen>::new(
+            StdAllocator,
+            SizeStrategy::WordsPerPage(4),
+            GrowthStrategy::Constant,
+        );
+
+        let i32_value = notebook.alloc::<i32>().expect(line_str!());
+        *i32_value = 0x0302i32;
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+        notebook.alloc_init(0i32);
+
+        let typed: &dyn TypedNotebook<usize> = &notebook;
+        typed.alloc_init_t(4usize);
+        typed.alloc_init_t(5usize);
+        typed.alloc_init_t(6usize);
+        typed.alloc_init_t(7usize);
+
+        assert_eq!(
+            [
+                vec![],
+                vec![],
+                vec![
+                    vec![2u8, 3u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8],
+                ],
+                vec![
+                    vec![4u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 5u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 6u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 7u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8],
+                ],
+                vec![],
+            ],
+            notebook.clone_chapters(),
+        );
+
+        assert_eq!(770, *i32_value);
+
+        let str_value = notebook.new(String::from("1u8")).expect(line_str!());
+
+        assert_eq!("1u8", *str_value);
+    }
+
+    #[test]
+    fn test_mono_notebook() {
+        let typed_notebook = PersonalMonoNotebook::<_, Pen, TestStruct>::new(
+            StdAllocator,
+            SizeStrategy::ItemsPerPage(4),
+            GrowthStrategy::Constant,
+        );
+
+        let s1 = typed_notebook.alloc_init_t(TestStruct {
+            a: 0x01020304,
+            b: -0x04030201,
+        });
+
+        assert_eq!(TestStruct { a: 16909060, b: -67305985 }, *s1.expect(line_str!()));
+    }
 }
